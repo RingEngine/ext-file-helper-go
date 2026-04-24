@@ -1,0 +1,77 @@
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-exe-cross:
+    name: Cross-build Windows exe
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build Windows helper exe
+        run: |
+          mkdir -p dist
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o dist/webext-fsa-app.exe .
+
+      - name: Upload cross-built exe
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-exe-cross
+          path: dist/webext-fsa-app.exe
+          if-no-files-found: error
+
+  build-windows-release:
+    name: Build Windows release
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build MSI package
+        run: .\build-msi.ps1
+
+      - name: Upload Windows release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-release
+          path: dist/*.msi
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          $files = @(
+            (Get-ChildItem 'dist\*.msi' | Select-Object -First 1 -ExpandProperty FullName)
+          )
+
+          gh release view $env:TAG_NAME --json tagName *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:TAG_NAME $files --clobber
+          } else {
+            gh release create $env:TAG_NAME $files --generate-notes --title $env:TAG_NAME
+          }

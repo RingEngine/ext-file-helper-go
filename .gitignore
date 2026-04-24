@@ -1,0 +1,9 @@
+dist/
+.tools/
+
+# Build scratch
+*.log
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

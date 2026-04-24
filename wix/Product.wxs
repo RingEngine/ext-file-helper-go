@@ -1,0 +1,39 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="Ext File Helper Go"
+    Manufacturer="Ring Engine Org"
+    Version="$(var.HelperVersion)"
+    UpgradeCode="A8B303D3-52E7-4AB6-B500-4514E98D899A"
+    Scope="perUser"
+    InstallerVersion="500">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Ext File Helper Go is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="MainFeature" Title="Ext File Helper Go" Level="1">
+      <ComponentRef Id="HelperFiles" />
+      <ComponentRef Id="FirefoxNativeHostRegistration" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="INSTALLFOLDER" Name="ExtFileHelperGo" />
+    </StandardDirectory>
+  </Fragment>
+
+  <Fragment>
+    <Component Id="HelperFiles" Directory="INSTALLFOLDER" Guid="A7D67C13-A0AB-4324-8DF4-94E2438A31B8">
+      <File Id="HelperExe" Source="dist\webext-fsa-app.exe" KeyPath="yes" />
+      <File Id="NativeManifestFile" Source="wix\webext.fsa.app.json" />
+    </Component>
+
+    <Component Id="FirefoxNativeHostRegistration" Directory="INSTALLFOLDER" Guid="D0FA6C3F-9441-4EA4-80B7-9066CC7B52C1">
+      <RegistryValue
+        Root="HKCU"
+        Key="Software\Mozilla\NativeMessagingHosts\webext.fsa.app"
+        Type="string"
+        Value="[INSTALLFOLDER]webext.fsa.app.json"
+        KeyPath="yes" />
+    </Component>
+  </Fragment>
+</Wix>
